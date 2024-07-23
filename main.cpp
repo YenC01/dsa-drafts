@@ -378,9 +378,17 @@ public:
     void SlotMenu() {
     int choice;    
         while (true) {
-            cout << " ======== Welcome to the Slot Machine! ======== " << endl << endl;
-            cout << "    Test your luck? [1] Yes [2] Main Menu" << endl;
-            cout << "                Choice: ";
+            cout << "+----------------------------------------+" << endl;
+            cout << "|      Welcome to the Slot Machine!      |" << endl;
+            cout << "+----------------------------------------+" << endl;
+            cout << "|                                        |" << endl;
+            cout << "|            Test your luck?             |" << endl;
+            cout << "|                                        |" << endl;
+            cout << "+----------------------------------------+" << endl;
+            cout << "| [1] Yes                                |" << endl;
+            cout << "| [2] No                                 |" << endl;
+            cout << "+----------------------------------------+" << endl;
+            cout << " Choose option: ";
             
             if (!(cin >> choice)){
                 cin.clear(); 
