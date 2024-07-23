@@ -76,35 +76,35 @@ public:
     }
 
     void save_user() {
-    ifstream infile("user_info.txt");
-    stringstream buffer;
-    buffer << infile.rdbuf();
-    infile.close();
-
-    string content = buffer.str();
-    stringstream new_content;
-    bool user_found = false;
-    size_t pos = 0;
-
-    // Read line by line and update user information if the username matches
-    string line;
-    while (getline(buffer, line)) {
-        if (line.find("Username: " + getUsername()) != string::npos) {
-            line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
-            user_found = true;
+        ifstream infile("user_info.txt");
+        stringstream buffer;
+        buffer << infile.rdbuf();
+        infile.close();
+    
+        string content = buffer.str();
+        stringstream new_content;
+        bool user_found = false;
+        size_t pos = 0;
+    
+        // Read line by line and update user information if the username matches
+        string line;
+        while (getline(buffer, line)) {
+            if (line.find("Username: " + getUsername()) != string::npos) {
+                line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
+                user_found = true;
+            }
+            new_content << line << "\n";
         }
-        new_content << line << "\n";
+    
+        // If the user was not found, add a new line for the user
+        if (!user_found) {
+            new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
+        }
+    
+        ofstream outfile("user_info.txt");
+        outfile << new_content.str();
+        outfile.close();
     }
-
-    // If the user was not found, add a new line for the user
-    if (!user_found) {
-        new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
-    }
-
-    ofstream outfile("user_info.txt");
-    outfile << new_content.str();
-    outfile.close();
-}
 
 
     bool load_user(const string& username, const string& password) {
@@ -115,18 +115,22 @@ public:
         while (getline(file, line)) {
             if (line.find("Username: " + username) != string::npos) {
                 size_t pos = line.find("Password: ");
-                if (pos != string::npos && line.substr(pos + 10, password.length()) == password) {
-                    size_t balance_pos = line.find("Balance: ");
-                    size_t jackpot_pos = line.find("Jackpot: ");
-                    if (balance_pos != string::npos && jackpot_pos != string::npos) {
-                        float balance = stof(line.substr(balance_pos + 9, jackpot_pos - balance_pos - 9));
-                        float jackpot = stof(line.substr(jackpot_pos + 9));
-                        setUsername(username);
-                        setPassword(password);
-                        setBalance(balance);
-                        current_user.jackpot = jackpot;
-                        file.close();
-                        return true;
+                if (pos != string::npos) {
+                    size_t password_end = line.find(" Balance: ", pos);
+                    string stored_password = line.substr(pos + 10, password_end - (pos + 10));
+                    if (stored_password == password) {
+                        size_t balance_pos = line.find("Balance: ");
+                        size_t jackpot_pos = line.find("Jackpot: ");
+                        if (balance_pos != string::npos && jackpot_pos != string::npos) {
+                            float balance = stof(line.substr(balance_pos + 9, jackpot_pos - balance_pos - 9));
+                            float jackpot = stof(line.substr(jackpot_pos + 9));
+                            setUsername(username);
+                            setPassword(password);
+                            setBalance(balance);
+                            current_user.jackpot = jackpot;
+                            file.close();
+                            return true;
+                        }
                     }
                 }
             }
