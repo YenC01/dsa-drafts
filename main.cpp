@@ -359,6 +359,140 @@ public:
 
 };
 
+class Slot {
+private:
+    User &user;
+    UserManager &userManager;
+    Wallet &wallet;
+
+public:
+    Slot(User &user, UserManager &userManager, Wallet &wallet)
+    : user(user), userManager(userManager), wallet(wallet) {}
+        
+    string slotArray[6] = {"7", "Orange", "Cherry", "Blueberry", "Watermelon", "Pear"};
+    string colors[6] = {"\033[0;36m", "\e[0;33m", "\033[0;31m", "\033[0;34m", "\033[0;35m", "\033[0;32m"};
+    const string RESET = "\033[0m";
+
+    
+
+    void SlotMenu() {
+    int choice;    
+        while (true) {
+            cout << " ======== Welcome to the Slot Machine! ======== " << endl << endl;
+            cout << "    Test your luck? [1] Yes [2] Main Menu" << endl;
+            cout << "                Choice: ";
+            
+            if (!(cin >> choice)){
+                cin.clear(); 
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                userManager.clear_screen();
+                cout << "Invalid input. Please enter an integer.\n" << endl;
+                continue;
+            }
+    
+            if (choice == 1) {
+                if (user.getBalance() >= 15) {
+                    userManager.clear_screen();
+                    verify();
+                } else {
+                    userManager.clear_screen();
+                    cout << endl << "You do not have enough balance to play the Slot Machine." << endl << endl;
+                }
+            } else if (choice == 2) {
+                userManager.clear_screen();
+                return;
+            } else {
+                userManager.clear_screen();
+                cout << endl << "\t Invalid Input. Try again." << endl << endl;
+            }
+        }
+    }
+
+    void verify(){
+        int choice;
+        while (true)
+        {
+            cout << "A game costs $15. Do you want to continue? [1] Yes [2] No ";
+
+            if (!(cin >> choice)){
+                    cin.clear(); 
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                    userManager.clear_screen();
+                    cout << "Invalid input. Please enter an integer.\n" << endl;
+                    continue;
+                }
+
+            if (choice == 1){
+                userManager.clear_screen();
+                slot();
+                break;
+            } else if (choice == 2){
+                userManager.clear_screen();
+                return;
+            } else{
+                cin.clear(); 
+                cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                userManager.clear_screen();
+                cout << "Invalid input. Please enter an integer.\n" << endl;
+                continue;
+            }
+        }
+
+    }
+
+    void slot() {
+        int choice;
+        int arraySize = sizeof(slotArray) / sizeof(slotArray[0]);
+        srand(static_cast<unsigned int>(time(0)));
+        
+        int randomIndex1 = rand() % arraySize;
+        int randomIndex2 = rand() % arraySize;
+        int randomIndex3 = rand() % arraySize;
+
+        string reel1 = slotArray[randomIndex1];
+        string reel2 = slotArray[randomIndex2];
+        string reel3 = slotArray[randomIndex3];
+
+        while (true)
+        {
+            cout << " ================ SLOT MACHINE ================" << endl << endl;
+            cout << "  ||  "<< colors[randomIndex1] << reel1 << RESET << "  |  " 
+                << colors[randomIndex2] << reel2 << RESET << "  |  " 
+                << colors[randomIndex3] << reel3 << RESET << "  ||" << endl;
+            cout << endl << " ==============================================" << endl;
+        
+            if ((reel1 == reel2) && (reel2 == reel3)) {
+                cout << endl << "\t     JACKPOT! YOU WON $100" << endl;
+                user.addBalance(100);
+                cout << "\t Play again? [1] Yes [2] Main Menu: ";
+                
+                if (!(cin >> choice)){
+                    cin.clear(); 
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                    userManager.clear_screen();
+                    cout << "Invalid input. Please enter an integer.\n" << endl;
+                    continue;
+                }
+        
+                if (choice != 1) {
+                    userManager.clear_screen();
+                    return;
+                }
+            } else {
+                cout << "\n        You lose! Better luck next time! " << endl;
+                cout << "  $15 has been subtracted  from your balance." << endl;
+                user.subtractBalance(15);
+            
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "\n           Press Enter to return.";
+                cin.get();
+                userManager.clear_screen();
+                return;
+            }
+        }  
+        }
+};
+
 
 class Lotto
 {
@@ -1639,7 +1773,13 @@ private:
 
 public:
     Casino(User& user, UserManager& userManager)
-        : user(user), userManager(userManager), wallet(user), lotto(user, userManager, wallet), baccarat(user, userManager, wallet), soduko(user, userManager, wallet) {}
+        : user(user), 
+        userManager(userManager), 
+        wallet(user), 
+        lotto(user, userManager, wallet), 
+        baccarat(user, userManager, wallet), 
+        soduko(user, userManager, wallet),
+        slot(user, userManager, wallet) {}
 
     void sign_up() {
         cout << "+----------------------------------+" << endl;
@@ -1809,7 +1949,7 @@ public:
             switch (choice) {
             case 1:
                 userManager.clear_screen();
-                //slot
+                slot.SlotMenu();
                 break;
             case 2:
                 userManager.clear_screen();
