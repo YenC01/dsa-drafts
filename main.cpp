@@ -76,35 +76,35 @@ public:
     }
 
     void save_user() {
-        ifstream infile("user_info.txt");
-        stringstream buffer;
-        buffer << infile.rdbuf();
-        infile.close();
-    
-        string content = buffer.str();
-        stringstream new_content;
-        bool user_found = false;
-        size_t pos = 0;
-    
-        // Read line by line and update user information if the username matches
-        string line;
-        while (getline(buffer, line)) {
-            if (line.find("Username: " + getUsername()) != string::npos) {
-                line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
-                user_found = true;
-            }
-            new_content << line << "\n";
+    ifstream infile("user_info.txt");
+    stringstream buffer;
+    buffer << infile.rdbuf();
+    infile.close();
+
+    string content = buffer.str();
+    stringstream new_content;
+    bool user_found = false;
+    size_t pos = 0;
+
+    // Read line by line and update user information if the username matches
+    string line;
+    while (getline(buffer, line)) {
+        if (line.find("Username: " + getUsername()) != string::npos) {
+            line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
+            user_found = true;
         }
-    
-        // If the user was not found, add a new line for the user
-        if (!user_found) {
-            new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
-        }
-    
-        ofstream outfile("user_info.txt");
-        outfile << new_content.str();
-        outfile.close();
+        new_content << line << "\n";
     }
+
+    // If the user was not found, add a new line for the user
+    if (!user_found) {
+        new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
+    }
+
+    ofstream outfile("user_info.txt");
+    outfile << new_content.str();
+    outfile.close();
+}
 
 
     bool load_user(const string& username, const string& password) {
@@ -115,22 +115,18 @@ public:
         while (getline(file, line)) {
             if (line.find("Username: " + username) != string::npos) {
                 size_t pos = line.find("Password: ");
-                if (pos != string::npos) {
-                    size_t password_end = line.find(" Balance: ", pos);
-                    string stored_password = line.substr(pos + 10, password_end - (pos + 10));
-                    if (stored_password == password) {
-                        size_t balance_pos = line.find("Balance: ");
-                        size_t jackpot_pos = line.find("Jackpot: ");
-                        if (balance_pos != string::npos && jackpot_pos != string::npos) {
-                            float balance = stof(line.substr(balance_pos + 9, jackpot_pos - balance_pos - 9));
-                            float jackpot = stof(line.substr(jackpot_pos + 9));
-                            setUsername(username);
-                            setPassword(password);
-                            setBalance(balance);
-                            current_user.jackpot = jackpot;
-                            file.close();
-                            return true;
-                        }
+                if (pos != string::npos && line.substr(pos + 10, password.length()) == password) {
+                    size_t balance_pos = line.find("Balance: ");
+                    size_t jackpot_pos = line.find("Jackpot: ");
+                    if (balance_pos != string::npos && jackpot_pos != string::npos) {
+                        float balance = stof(line.substr(balance_pos + 9, jackpot_pos - balance_pos - 9));
+                        float jackpot = stof(line.substr(jackpot_pos + 9));
+                        setUsername(username);
+                        setPassword(password);
+                        setBalance(balance);
+                        current_user.jackpot = jackpot;
+                        file.close();
+                        return true;
                     }
                 }
             }
@@ -357,6 +353,94 @@ public:
         }
     }
 
+};
+
+
+class Slot {
+private:
+    User &user;
+    UserManager &userManager;
+    Wallet &wallet;
+
+public:
+    Slot(User &user, UserManager &userManager, Wallet &wallet)
+    : user(user), userManager(userManager), wallet(wallet) {}
+        
+    string slotArray[6] = {"7", "Orange", "Cherry", "Blueberry", "Watermelon", "Pear"};
+    string colors[6] = {"\033[0;36m", "\e[0;33m", "\033[0;31m", "\033[0;34m", "\033[0;35m", "\033[0;32m"};
+    const string RESET = "\033[0m";
+
+    int choice;
+
+    void SlotMenu() {
+        while (true) {
+            cout << " ======== Welcome to the Slot Machine! ======== " << endl << endl;
+            cout << "    Test your luck? [1] Yes [2] Main Menu" << endl;
+            cout << "                Choice: ";
+            
+            while (!(cin >> choice)) {
+                cout << endl << "    Invalid selection. Please enter 1 or 2: ";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+    
+            if (choice == 1) {
+                if (user.getBalance() >= 15) {
+                    slot();
+                } else {
+                    cout << endl << "You do not have enough balance to play the Slot Machine." << endl << endl;
+                }
+            } else if (choice == 2) {
+                userManager.clear_screen();
+                return;
+            } else {
+                cout << endl << "\t Invalid Input. Try again." << endl << endl;
+            }
+        }
+    }
+
+    void slot() {
+        int arraySize = sizeof(slotArray) / sizeof(slotArray[0]);
+        srand(static_cast<unsigned int>(time(0)));
+     
+        int randomIndex1 = rand() % arraySize;
+        int randomIndex2 = rand() % arraySize;
+        int randomIndex3 = rand() % arraySize;
+    
+        string reel1 = slotArray[randomIndex1];
+        string reel2 = slotArray[randomIndex2];
+        string reel3 = slotArray[randomIndex3];
+    
+        cout << endl << " ================ SLOT MACHINE ================" << endl << endl;
+        cout << "  ||  "<< colors[randomIndex1] << reel1 << RESET << "  |  " 
+             << colors[randomIndex2] << reel2 << RESET << "  |  " 
+             << colors[randomIndex3] << reel3 << RESET << "  ||" << endl;
+        cout << endl << " ==============================================" << endl;
+    
+        if ((reel1 == reel2) && (reel2 == reel3)) {
+            cout << endl << "\t     JACKPOT! YOU WON $100" << endl;
+            user.addBalance(100);
+            
+            cout << "\t     Current balance: " << user.getBalance() << endl << endl;
+            
+            cout << "\t Play again? [1] Yes [2] Main Menu: ";
+            
+            while (!(cin >> choice)) {
+                cout << "    Invalid selection. Please enter 1 or 2: ";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+    
+            if (choice != 1) {
+                userManager.clear_screen();
+                return;
+            }
+        } else {
+            cout << "\t           You lose!" << endl;
+            user.subtractBalance(15);
+            cout << "\t     Current balance: " << user.getBalance() << endl << endl;
+        }
+    }
 };
 
 
@@ -745,6 +829,7 @@ public:
     }
 };
 
+
 class Baccarat
 {
 private:
@@ -1113,7 +1198,7 @@ public:
             cout << "It's a tie " << endl;;
             if (bet.bet == "Tie") {
                 user.addBalance(bet.amount * 8);
-                cout << "\nCongratualations! You win $" << bet.amount * 8 << "!\n";
+                cout << "\nCongratulations! You win $" << bet.amount * 8 << "!\n";
             } else {
                 user.subtractBalance(bet.amount);
                 cout << "\nYou lose $" << bet.amount << ". Better luck next time!\n";
@@ -1809,7 +1894,7 @@ public:
             switch (choice) {
             case 1:
                 userManager.clear_screen();
-                //slot
+                Slot.SlotMenu();
                 break;
             case 2:
                 userManager.clear_screen();
