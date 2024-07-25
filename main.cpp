@@ -79,33 +79,33 @@ public:
     }
 
     void save_user() {
-        ifstream infile("user_info.txt");
-        stringstream buffer;
-        buffer << infile.rdbuf();
-        infile.close();
+    ifstream infile("user_info.txt");
+    stringstream buffer;
+    buffer << infile.rdbuf();
+    infile.close();
 
-        string content = buffer.str();
-        stringstream new_content;
-        bool user_found = false;
-        size_t pos = 0;
+    string content = buffer.str();
+    stringstream new_content;
+    bool user_found = false;
+    size_t pos = 0;
 
-        string line;
-        while (getline(buffer, line)) {
-            if (line.find("Username: " + getUsername()) != string::npos) {
-                line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
-                user_found = true;
-            }
-            new_content << line << "\n";
+    string line;
+    while (getline(buffer, line)) {
+        if (line.find("Username: " + getUsername()) != string::npos) {
+            line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
+            user_found = true;
         }
-
-        if (!user_found) {
-            new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
-        }
-
-        ofstream outfile("user_info.txt");
-        outfile << new_content.str();
-        outfile.close();
+        new_content << line << "\n";
     }
+
+    if (!user_found) {
+        new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
+    }
+
+    ofstream outfile("user_info.txt");
+    outfile << new_content.str();
+    outfile.close();
+}
 
 
     bool load_user(const string& username, const string& password) {
@@ -1175,7 +1175,7 @@ public:
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Please enter a valid choice from the menu.\n" << endl;
+                cout << "Invalid input. Please enter an integer.\n" << endl;
                 continue;
             }
 
@@ -1534,7 +1534,7 @@ public:
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Please enter a valid choice from the menu.\n" << endl;
+                cout << "Invalid input. Please enter an integer.\n" << endl;
                 continue;
             }
 
@@ -2728,7 +2728,7 @@ public:
             cout << "|           Logic Games            |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "| Select an option:                |" << endl;
-            cout << "| [1] Sudoku                       |" << endl;
+            cout << "| [1] Soduko                       |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "| [2] Wallet                       |" << endl;
             cout << "+----------------------------------+" << endl;
