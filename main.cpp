@@ -14,6 +14,7 @@
 
 #define ANSI_COLOR_BLUE "\x1b[34m"
 #define ANSI_COLOR_YELLOW "\x1b[33m"
+#define ANSI_COLOR_RED "\033[31m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
 using namespace std;
@@ -82,13 +83,12 @@ public:
         stringstream buffer;
         buffer << infile.rdbuf();
         infile.close();
-    
+
         string content = buffer.str();
         stringstream new_content;
         bool user_found = false;
         size_t pos = 0;
-    
-        // Read line by line and update user information if the username matches
+
         string line;
         while (getline(buffer, line)) {
             if (line.find("Username: " + getUsername()) != string::npos) {
@@ -97,12 +97,11 @@ public:
             }
             new_content << line << "\n";
         }
-    
-        // If the user was not found, add a new line for the user
+
         if (!user_found) {
             new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
         }
-    
+
         ofstream outfile("user_info.txt");
         outfile << new_content.str();
         outfile.close();
@@ -154,7 +153,7 @@ public:
 
     void press_return() const {
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "\nPress Enter to return.";
+        cout << "\nPress 'enter' to return.";
         cin.get();
         clear_screen();
     }
@@ -173,8 +172,8 @@ public:
     string get_password_input() const {
         string password;
         char ch;
-        while ((ch = _getch()) != 13) { // 13 is ASCII value of Enter key
-            if (ch == 8) { // 8 is ASCII value of Backspace key
+        while ((ch = _getch()) != 13) { 
+            if (ch == 8) { 
                 if (!password.empty()) {
                     cout << "\b \b";
                     password.pop_back();
@@ -373,52 +372,73 @@ public:
         
     string slotArray[6] = {"7", "Orange", "Cherry", "Blueberry", "Watermelon", "Pear"};
     string colors[6] = {"\033[0;36m", "\e[0;33m", "\033[0;31m", "\033[0;34m", "\033[0;35m", "\033[0;32m"};
-    const string RESET = "\033[0m";
+    const string RESET = "\033[0m";    
 
-    void SlotMenu() {
-    int choice;    
+    void slotmachine_menu() {
+        int choice;
+
         while (true) {
-            cout << " ======== Welcome to the Slot Machine! ======== " << endl << endl;
-            cout << "    Test your luck? [1] Yes [2] Main Menu" << endl;
-            cout << "                Choice: ";
+            cout << "+----------------------------------+" << endl;
+            cout << "|      Welcome to Slot Machine!    |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| Select an option:                |" << endl;
+            cout << "| [1] Start the Game               |" << endl;
+            cout << "| [2] Instructions                 |" << endl;
+            cout << "| [3] Wallet                       |" << endl;
+            cout << "| [4] Return to Main Menu          |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << " Enter your choice: ";
             
-            if (!(cin >> choice)){
-                cin.clear(); 
-                cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+            if (!(cin >> choice)) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
-    
-            if (choice == 1) {
-                if (user.getBalance() >= 15) {
-                    userManager.clear_screen();
-                    verify();
-                } else {
-                    userManager.clear_screen();
-                    cout << endl << "You do not have enough balance to play the Slot Machine." << endl << endl;
-                }
-            } else if (choice == 2) {
+
+            switch (choice) {
+	    	case 1:
+		    	userManager.clear_screen();
+                verify_bet();
+			    break;
+            case 2:
+                userManager.clear_screen();
+                instructions();
+                break;
+            case 3:
+                userManager.clear_screen();
+                wallet.view_wallet();
+                break;
+            case 4:
                 userManager.clear_screen();
                 return;
-            } else {
+                break;
+            default:
                 userManager.clear_screen();
-                cout << endl << "\t Invalid Input. Try again." << endl << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
             }
         }
     }
 
-    void verify(){
+    void verify_bet(){
         int choice;
         while (true)
         {
-            cout << "A game costs $15. Do you want to continue? [1] Yes [2] No ";
+            cout << "+----------------------------------------+" << endl;
+            cout << "|           A game costs $15             |" << endl;
+            cout << "+----------------------------------------+" << endl;
+            cout << "| Do you want to continue?               |" << endl;
+            cout << "| [1] Yes                                |" << endl;
+            cout << "| [2] No                                 |" << endl;
+            cout << "+----------------------------------------+" << endl;
+            cout << "Choose option: ";
 
             if (!(cin >> choice)){
                     cin.clear(); 
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter an integer.\n" << endl;
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
                     continue;
                 }
 
@@ -433,11 +453,25 @@ public:
                 cin.clear(); 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
         }
 
+    }
+
+    void instructions(){
+        cout << "+----------------------------------------+" << endl;
+        cout << "|              INSTRUCTIONS              |" << endl;
+        cout << "+----------------------------------------+" << endl;
+        cout << "\nObjective:\n" << endl;
+        cout << "- The goal of the game is to match all three symbols on the slot machine reels." << endl;
+
+        cout << "\nWinning:\n" << endl;
+        cout << "- If all three symbols match, you win the jackpot of $100." << endl;
+        cout << "- If the symbols do not match, you lose the bet." << endl;
+
+        userManager.press_return();
     }
 
     void slot() {
@@ -462,36 +496,30 @@ public:
             cout << endl << " ==============================================" << endl;
         
             if ((reel1 == reel2) && (reel2 == reel3)) {
-                cout << endl << "\t     JACKPOT! YOU WON $100" << endl;
+                cout << endl << ANSI_COLOR_RED << "\t          JACKPOT!" << ANSI_COLOR_RESET << endl;
+                cout << "\t       You won $100\n" << endl;
                 user.addBalance(100);
-                cout << "\t Play again? [1] Yes [2] Main Menu: ";
-                
-                if (!(cin >> choice)){
-                    cin.clear(); 
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    userManager.clear_screen();
-                    cout << "Invalid input. Please enter an integer.\n" << endl;
-                    continue;
-                }
         
-                if (choice != 1) {
-                    userManager.clear_screen();
-                    return;
-                }
-            } else {
-                cout << "\n        You lose! Better luck next time! " << endl;
-                cout << "  $15 has been subtracted  from your balance." << endl;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "           Press 'enter' to return.";
+                cin.get();
+                userManager.clear_screen();
+                return;
+            }
+            else {
+                cout << "\n        You" << ANSI_COLOR_RED " LOSE" << ANSI_COLOR_RESET << "! Better luck next time!" << endl;
                 user.subtractBalance(15);
             
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "\n           Press Enter to return.";
+                cout << "\n           Press 'enter' to return.";
                 cin.get();
                 userManager.clear_screen();
                 return;
             }
         }  
-        }
+    }
 };
+
 
 class Lotto
 {
@@ -549,7 +577,7 @@ public:
                 cin.clear(); 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
 
@@ -587,7 +615,7 @@ public:
                     break;
                 default:
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter an option from the menu.\n" << endl;
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
                     break;
             }
         }
@@ -607,7 +635,7 @@ public:
 
             bool result = game(max_num);
             if (result) {
-                cout << "\nCongratulations! You won $" << user.getJackpot() << "!" << endl;
+                cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You won $" << user.getJackpot() << "!" << endl;
                 user.addBalance(user.getJackpot());
             } else {
                 cout << "\nYou did not guess all of the winning numbers." << endl;
@@ -669,12 +697,12 @@ public:
                 if (!(cin >> element)) {
                     cin.clear();
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                    cout << "\nInvalid input. Please enter a valid integer.\n" << endl;
+                    cout << "\nPlease enter a valid integer.\n" << endl;
                     valid = false;
                 }
 
                 if (valid && (element > max_num || element <= 0)) {
-                    cout << "\nInvalid input. Bets must be between 1 and " << max_num << ".\n" << endl;
+                    cout << "\nBets must be between 1 and " << max_num << ".\n" << endl;
                     valid = false;
                 }
 
@@ -722,7 +750,7 @@ public:
                     cin.clear();
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter an integer.\n" << endl;
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
                     continue;
                 }
 
@@ -757,7 +785,7 @@ public:
                 cin.clear(); 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter an integer.\n" << endl;
                 continue;
             } 
             else if (index == 0) {
@@ -766,7 +794,7 @@ public:
             } 
             else if (index < 1 || index > 6) {
                 userManager.clear_screen(); 
-                cout << "Invalid position. Please enter a number between 1 and 6.\n" << endl;
+                cout << "Please enter a number between 1 and 6.\n" << endl;
                 continue;
             }
             else{
@@ -848,7 +876,7 @@ public:
                 cin.clear(); 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
 
@@ -871,7 +899,7 @@ public:
                     break;
                 default:
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter an option from the menu.\n" << endl;
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
                     break;
             }
         }
@@ -962,12 +990,21 @@ public:
                     if (betAmount == 0) {
                         break;
                     }
-				    if (betAmount > 0) {
+				    else{
 					    int betResult = verify_bet(betAmount);
-					    if (betResult == 1) {
-						    play_game(betAmount);
-						    break;
+                        if (betResult == 0){
+                            break;
+                        }
+					    else if (betResult == 1) {
+						    int betAmount = get_bet_amount();
+                            if (betAmount == 0) {
+                                break;
+                            }
 					    }
+                        else if (betResult == 2){
+                            play_game(betAmount);
+						    break;
+                        }
 				    }
 		    	}
 			    break;
@@ -1014,7 +1051,8 @@ public:
 
             playerColorIndex = color_index(playerColor);
             if (playerColorIndex == -1) {
-                cout << "Invalid choice of color. Please try again." << endl;
+                userManager.clear_screen();
+                cout << "Invalid choice of color.\n" << endl;
                 continue;
             }
             break;
@@ -1052,36 +1090,18 @@ public:
         }
         if (count == 2) {
             winnings = betAmount * 2;
-            cout << "Congratulations! You won $" << winnings << endl;
+            cout << ANSI_COLOR_RED << "CONGRATULATIONS!" << ANSI_COLOR_RESET << " You won $" << winnings << endl;
         }
         if (count == 3) {
             winnings = betAmount * 3;
-            cout << "Congratulations! You won $" << winnings << endl;
+            cout << ANSI_COLOR_RED << "CONGRATULATIONS!" << ANSI_COLOR_RESET << " You won $" << winnings << endl;
         }
 
         user.addBalance(winnings);
         
-        cout << "\n----------------------------------------------" << endl;
-        cout << "Would you like to play another round? (Y/N): ";
-        cin >> choice;
-        userManager.clear_screen();
+        userManager.press_return();
+        return;
 
-        if (choice == 'y' || choice == 'Y') {
-            userManager.clear_screen();
-            while (true) {
-                int betAmount = get_bet_amount();
-                if (betAmount > 0) {
-                    int betResult = verify_bet(betAmount);
-                    if (betResult == 1) {
-                        play_game(betAmount);
-                        break;
-                    }
-                }
-            }
-        }
-        else {
-            colorgame_menu();
-        }
     }
 
     void instructions() {
@@ -1137,19 +1157,21 @@ public:
         }
     }
 
-    int verify_bet(int betAmount) {
+    int verify_bet(int betAmount){
         int choice;
 
         while (true) {
-            cout << "You have bet $" << betAmount << endl;
-            cout << "-----------------\n" << endl;
-            cout << "[1] Confirm bet" << endl;
-            cout << "[2] Change bet" << endl;
-            cout << "[3] Cancel\n" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "               $" << betAmount << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [1] Change bet amount            |" << endl;
+            cout << "| [2] Finalize bet                 |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [0] Cancel                       |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "Choose your bet: " ;
 
-            cout << "Enter your choice: ";
-
-            if (!(cin >> choice)) {
+            if (!(cin >> choice)){
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
@@ -1158,22 +1180,25 @@ public:
             }
 
             switch (choice) {
-            case 1:
-                userManager.clear_screen();
-                cout << "Your bet of $" << betAmount << " has been confirmed." << endl;
-                user.subtractBalance(betAmount);
-                userManager.press_return();
-                userManager.clear_screen();
-                return 1;
-            case 2:
-                userManager.clear_screen();
-                return 2;
-            case 3:
-                userManager.clear_screen();
-                colorgame_menu();
-            default:
-                cout << "Please enter a valid choice from the menu.\n" << endl;
-                break;
+                case 0:
+                    userManager.clear_screen();
+                    return 0;
+                case 1:
+                    userManager.clear_screen();
+                    return 1;
+                case 2:
+                    userManager.clear_screen(); 
+                    cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                    cout << "\nPress 'enter' to continue.";
+                    cin.get();
+                    user.subtractBalance(betAmount);
+                    userManager.clear_screen();
+                    return 2;
+                default:
+                    userManager.clear_screen();
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
+                    break;
             }
         }
     }
@@ -1289,12 +1314,21 @@ public:
                     if (betAmount == 0) {
                         break;
                     }
-				    if (betAmount > 0) {
+				    else{
 					    int betResult = verify_bet(betAmount);
-					    if (betResult == 1) {
-						    play_game(betAmount);
-						    break;
+                        if (betResult == 0){
+                            break;
+                        }
+					    else if (betResult == 1) {
+						    int betAmount = get_bet_amount();
+                            if (betAmount == 0) {
+                                break;
+                            }
 					    }
+                        else if (betResult == 2){
+                            play_game(betAmount);
+						    break;
+                        }
 				    }
 		    	}
 			    break;
@@ -1340,31 +1374,6 @@ public:
 	    userManager.press_return();
     }
 
-    void play_again(int betAmount) {
-    	char choice;
-
-	    cout << "\n----------------------------------------------" << endl;
-    	cout << "Would you like to play another round? (Y/N): ";
-	    cin >> choice;
-	    userManager.clear_screen();
-
-    	if (choice == 'y' || choice == 'Y') {
-	    	userManager.clear_screen();
-		    while (true) {
-			    int betAmount = get_bet_amount();
-    			if (betAmount > 0) {
-	    			int betResult = verify_bet(betAmount);
-		    		if (betResult == 1) {
-			    		play_game(betAmount);
-				    	break;
-    				}
-	    		}
-		    }
-    	}
-	    else {
-		    blackjack_menu();
-    	}
-    }
 
     void play_game(int betAmount) {
         vector<string> playerHand;
@@ -1390,8 +1399,10 @@ public:
             cout << "===================================" << endl;
 
             if (player_value == -1) {
-                cout << "\nYou drew a 'JOKER'" << endl;
-                play_again(betAmount);
+                cout << "\nYou drew a '" << ANSI_COLOR_RED << "JOKER" << ANSI_COLOR_RESET << "'" << endl;
+                cout << "\nPress 'enter' to continue.";
+                cin.get();
+                userManager.clear_screen();
                 return;
             }
             else {
@@ -1399,14 +1410,28 @@ public:
             }
 
             cout << "\nDo you want to (1) Hit or (2) Stand?: ";
-            cin >> choice;
+
+            if (!(cin >> choice)){
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                userManager.clear_screen();
+                cout << "Please enter an integer.\n" << endl;
+                continue;
+            }
 
             if (choice == 1) {
                 string additionalCard = draw_card();
                 playerHand.push_back(additionalCard);
             }
-            else {
+            else if(choice == 2){
                 break;
+            }
+            else {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                userManager.clear_screen();
+                cout << "Please enter a valid option.\n" << endl;
+                continue;
             }
 
             userManager.clear_screen();
@@ -1416,10 +1441,10 @@ public:
         while (true) {
             int dealer_value = hand_value(dealerHand);
             if (dealer_value == -1) {
-                cout << "Dealer drew a 'JOKER'" << endl;
+                cout << "Dealer drew a '" << ANSI_COLOR_RED << "JOKER" << ANSI_COLOR_RESET << "'" << endl;
                 cout << "\nYou won $" << betAmount << "!" << endl;
                 user.addBalance(betAmount);
-                play_again(betAmount);
+                userManager.press_return();
                 return;
             }
             if (dealer_value >= 17) {
@@ -1438,14 +1463,14 @@ public:
         cout << "\n";
 
         if (dealer_value == -1 || (player_value <= 21 && player_value > dealer_value) || (dealer_value > 21 && player_value <= 21)) {
-            cout << "CONGRATULATIONS!" << endl;
+            cout << ANSI_COLOR_RED << "CONGRATULATIONS!" << ANSI_COLOR_RESET << endl;
             win += 1;
         }
-        else if (player_value > 21 && dealer_value > 21) {
-            cout << "It's a DRAW!" << endl;
+        else if (player_value == dealer_value || (player_value > 21 && dealer_value > 21)) {
+            cout << "It's a " << ANSI_COLOR_RED << "DRAW!" << ANSI_COLOR_RESET << endl;
         }
         else {
-            cout << "The dealer WINS!" << endl;
+            cout << "The dealer" << ANSI_COLOR_RED << " WINS!" << ANSI_COLOR_RESET << endl;
         }
 
         if (win == 1) {
@@ -1454,10 +1479,11 @@ public:
             user.addBalance(winnings);
         }
 
-        play_again(betAmount);
+        userManager.press_return();
+        return;
     }
 
-    int get_bet_amount() {
+     int get_bet_amount() {
         int betAmount;
 
         while (true) {
@@ -1490,19 +1516,21 @@ public:
         }
     }
 
-    int verify_bet(int betAmount) {
+    int verify_bet(int betAmount){
         int choice;
 
         while (true) {
-            cout << "You have bet $" << betAmount << endl;
-            cout << "-----------------\n" << endl;
-            cout << "[1] Confirm bet" << endl;
-            cout << "[2] Change bet" << endl;
-            cout << "[3] Cancel\n" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "               $" << betAmount << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [1] Change bet amount            |" << endl;
+            cout << "| [2] Finalize bet                 |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [0] Cancel                       |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "Choose your bet: " ;
 
-            cout << "Enter you choice: ";
-            
-            if (!(cin >> choice)) {
+            if (!(cin >> choice)){
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
@@ -1511,22 +1539,25 @@ public:
             }
 
             switch (choice) {
-            case 1:
-                userManager.clear_screen();
-                cout << "Your bet of $" << betAmount << " has been confirmed." << endl;
-                user.subtractBalance(betAmount);
-                userManager.press_return();
-                userManager.clear_screen();
-                return 1;
-            case 2:
-                userManager.clear_screen();
-                return 2;
-            case 3:
-                userManager.clear_screen();
-                blackjack_menu();
-            default:
-                cout << "Please enter a valid choice from the menu.\n" << endl;
-                break;
+                case 0:
+                    userManager.clear_screen();
+                    return 0;
+                case 1:
+                    userManager.clear_screen();
+                    return 1;
+                case 2:
+                    userManager.clear_screen(); 
+                    cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                    cout << "\nPress 'enter' to continue.";
+                    cin.get();
+                    user.subtractBalance(betAmount);
+                    userManager.clear_screen();
+                    return 2;
+                default:
+                    userManager.clear_screen();
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
+                    break;
             }
         }
     }
@@ -1567,7 +1598,7 @@ public:
                 cin.clear(); 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
 
@@ -1590,7 +1621,7 @@ public:
                     break;
                 default:
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter an option from the menu.\n" << endl;
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
                     break;
             }
         }
@@ -1668,7 +1699,7 @@ public:
                 cin.clear(); 
                 cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                 userManager.clear_screen();
-                cout << "\nInvalid input. Please enter an integer." << endl;
+                cout << "\nPlease enter a valid choice from the menu." << endl;
                 continue;
             }
 
@@ -1690,7 +1721,7 @@ public:
                     return 1;
                 default:
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter an option from the menu.\n" << endl;
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
                     break;
             }
         }
@@ -1714,13 +1745,13 @@ public:
                     return bet_amount;
                 } else {
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter a positive integer.\n" << endl;
+                    cout << "Please enter a positive integer.\n" << endl;
                 }
             } else {
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter an integer.\n" << endl;
             }
         }
     }
@@ -1744,7 +1775,7 @@ public:
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
 
@@ -1764,14 +1795,14 @@ public:
                     userManager.clear_screen(); 
                     cout << "Your bet of $" << bet.amount << " on " << bet.bet << " is confirmed." << endl;
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    cout << "\nPress Enter to continue.";
+                    cout << "\nPress 'enter' to continue.";
                     cin.get();
                     userManager.clear_screen();
                     game_menu(bet);
                     return;
                 default:
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter an option from the menu.\n" << endl;
+                    cout << "Please enter a valid choice from the menu.\n" << endl;
                     break;
             }
         }
@@ -1818,11 +1849,11 @@ public:
             }
         }
 
-        cout << "Press Enter to continue.";
+        cout << "Press 'enter' to continue.";
         cin.get();
         userManager.clear_screen();
         determine_winner(bet, player_value, banker_value);
-        cout << "\nPress Enter to return.";
+        cout << "\nPress 'enter' to return.";
         cin.get();
         userManager.clear_screen();
         baccarat_menu();
@@ -1882,7 +1913,7 @@ public:
             cout << "Winner: Player" << endl;
             if (bet.bet == "Player") {
                 user.addBalance(bet.amount);
-                cout << "\nCongratualations! You win $" << bet.amount << "!\n";
+                cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You win $" << bet.amount << "!\n";
             } else {
                 user.subtractBalance(bet.amount);
                 cout << "\nYou lose $" << bet.amount << ". Better luck next time!\n";
@@ -1891,7 +1922,7 @@ public:
             cout << "Winner: Banker" << endl;
             if (bet.bet == "Banker") {
                 user.addBalance(bet.amount * 0.95) ;  
-                cout << "\nCongratualations! You win $" << bet.amount * 0.95 << "!\n";
+                cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You win $" << bet.amount * 0.95 << "!\n";
             } else {
                 user.subtractBalance(bet.amount);
                 cout << "\nYou lose $" << bet.amount << ". Better luck next time!\n";
@@ -1900,7 +1931,7 @@ public:
             cout << "It's a tie " << endl;;
             if (bet.bet == "Tie") {
                 user.addBalance(bet.amount * 8);
-                cout << "\nCongratualations! You win $" << bet.amount * 8 << "!\n";
+                cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You win $" << bet.amount * 8 << "!\n";
             } else {
                 user.subtractBalance(bet.amount);
                 cout << "\nYou lose $" << bet.amount << ". Better luck next time!\n";
@@ -2054,14 +2085,14 @@ public:
                 }
                 else {
                     userManager.clear_screen();
-                    cout << "Invalid input. Please enter a positive integer.\n" << endl;
+                    cout << "Please enter a positive integer.\n" << endl;
                 }
             }
             else {
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter an integer.\n" << endl;
             }
         }
     }
@@ -2177,6 +2208,9 @@ public:
                 if (board[i][j] != 0) {
                     fixed[i][j] = true;
                 }
+                else {
+                    fixed[i][j] = false;
+                }
             }
         }
 
@@ -2189,7 +2223,7 @@ public:
 
             if (row == -1 || col == -1 || num == -1) {
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "\nYou just forfeited $" << betAmount << ". Press Enter to return.";
+                cout << "\nYou just forfeited $" << betAmount << ". Press 'enter' to return.";
                 cin.get();
                 userManager.clear_screen();
                 break;
@@ -2224,8 +2258,12 @@ public:
                 if (choice == 1) {
                     if (solution_checker(board)) {
                         float winnings = bet_multiplier(tries, betAmount);
-                        cout << "\nYou have solved the puzzle!" << endl;
+                        cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You have solved the puzzle." << endl;
                         cout << "You have won $" << winnings << endl;
+                        cout << "\nPress 'enter' to return to the menu.";
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                        cin.get();
+                        userManager.clear_screen();
                         break;
                     } else {
                         cout << "\nPuzzle not solved." << endl;
@@ -2254,6 +2292,7 @@ public:
                     userManager.clear_screen();
                 } else {
                     cout << "Invalid choice." << endl;
+                    userManager.clear_screen();
                 }
             }
         }
@@ -2265,7 +2304,7 @@ public:
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             userManager.clear_screen();
-            cout << "Invalid input. Please only enter numbers from 1-9.\n" << endl;
+            cout << "Please only enter numbers from 1-9.\n" << endl;
             return false;
         }
 
@@ -2282,7 +2321,7 @@ public:
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             userManager.clear_screen();
-            cout << "Invalid input. Please only enter numbers from 1-9.\n" << endl;
+            cout << "Please only enter numbers from 1-9.\n" << endl;
             return false;
         }
 
@@ -2299,7 +2338,7 @@ public:
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             userManager.clear_screen();
-            cout << "Invalid input. Please only enter numbers from 1-9.\n" << endl;
+            cout << "Please only enter numbers from 1-9.\n" << endl;
             return false;
         }
 
@@ -2607,7 +2646,7 @@ public:
             switch (choice) {
             case 1:
                 userManager.clear_screen();
-                slot.SlotMenu();
+                slot.slotmachine_menu();
                 break;
             case 2:
                 userManager.clear_screen();
