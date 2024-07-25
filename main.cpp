@@ -78,35 +78,33 @@ public:
     }
 
     void save_user() {
-        ifstream infile("user_info.txt");
-        stringstream buffer;
-        buffer << infile.rdbuf();
-        infile.close();
-    
-        string content = buffer.str();
-        stringstream new_content;
-        bool user_found = false;
-        size_t pos = 0;
-    
-        // Read line by line and update user information if the username matches
-        string line;
-        while (getline(buffer, line)) {
-            if (line.find("Username: " + getUsername()) != string::npos) {
-                line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
-                user_found = true;
-            }
-            new_content << line << "\n";
+    ifstream infile("user_info.txt");
+    stringstream buffer;
+    buffer << infile.rdbuf();
+    infile.close();
+
+    string content = buffer.str();
+    stringstream new_content;
+    bool user_found = false;
+    size_t pos = 0;
+
+    string line;
+    while (getline(buffer, line)) {
+        if (line.find("Username: " + getUsername()) != string::npos) {
+            line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
+            user_found = true;
         }
-    
-        // If the user was not found, add a new line for the user
-        if (!user_found) {
-            new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
-        }
-    
-        ofstream outfile("user_info.txt");
-        outfile << new_content.str();
-        outfile.close();
+        new_content << line << "\n";
     }
+
+    if (!user_found) {
+        new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
+    }
+
+    ofstream outfile("user_info.txt");
+    outfile << new_content.str();
+    outfile.close();
+}
 
 
     bool load_user(const string& username, const string& password) {
@@ -173,8 +171,8 @@ public:
     string get_password_input() const {
         string password;
         char ch;
-        while ((ch = _getch()) != 13) { // 13 is ASCII value of Enter key
-            if (ch == 8) { // 8 is ASCII value of Backspace key
+        while ((ch = _getch()) != 13) { 
+            if (ch == 8) { 
                 if (!password.empty()) {
                     cout << "\b \b";
                     password.pop_back();
@@ -375,6 +373,8 @@ public:
     string colors[6] = {"\033[0;36m", "\e[0;33m", "\033[0;31m", "\033[0;34m", "\033[0;35m", "\033[0;32m"};
     const string RESET = "\033[0m";
 
+    
+
     void SlotMenu() {
     int choice;    
         while (true) {
@@ -389,6 +389,7 @@ public:
             cout << "| [2] No                                 |" << endl;
             cout << "+----------------------------------------+" << endl;
             cout << " Choose option: ";
+
             
             if (!(cin >> choice)){
                 cin.clear(); 
@@ -411,7 +412,7 @@ public:
                 return;
             } else {
                 userManager.clear_screen();
-                cout << endl << "\t Invalid Input. Try again." << endl << endl;
+                cout << endl << "Invalid Input. Try again." << endl << endl;
             }
         }
     }
@@ -500,6 +501,7 @@ public:
         }  
         }
 };
+
 
 class Lotto
 {
@@ -970,12 +972,21 @@ public:
                     if (betAmount == 0) {
                         break;
                     }
-				    if (betAmount > 0) {
+				    else{
 					    int betResult = verify_bet(betAmount);
-					    if (betResult == 1) {
-						    play_game(betAmount);
-						    break;
+                        if (betResult == 0){
+                            break;
+                        }
+					    else if (betResult == 1) {
+						    int betAmount = get_bet_amount();
+                            if (betAmount == 0) {
+                                break;
+                            }
 					    }
+                        else if (betResult == 2){
+                            play_game(betAmount);
+						    break;
+                        }
 				    }
 		    	}
 			    break;
@@ -1022,7 +1033,8 @@ public:
 
             playerColorIndex = color_index(playerColor);
             if (playerColorIndex == -1) {
-                cout << "Invalid choice of color. Please try again." << endl;
+                userManager.clear_screen();
+                cout << "Invalid choice of color. Please try again.\n" << endl;
                 continue;
             }
             break;
@@ -1069,27 +1081,9 @@ public:
 
         user.addBalance(winnings);
         
-        cout << "\n----------------------------------------------" << endl;
-        cout << "Would you like to play another round? (Y/N): ";
-        cin >> choice;
-        userManager.clear_screen();
+        userManager.press_return();
+        return;
 
-        if (choice == 'y' || choice == 'Y') {
-            userManager.clear_screen();
-            while (true) {
-                int betAmount = get_bet_amount();
-                if (betAmount > 0) {
-                    int betResult = verify_bet(betAmount);
-                    if (betResult == 1) {
-                        play_game(betAmount);
-                        break;
-                    }
-                }
-            }
-        }
-        else {
-            colorgame_menu();
-        }
     }
 
     void instructions() {
@@ -1145,43 +1139,48 @@ public:
         }
     }
 
-    int verify_bet(int betAmount) {
+    int verify_bet(int betAmount){
         int choice;
 
         while (true) {
-            cout << "You have bet $" << betAmount << endl;
-            cout << "-----------------\n" << endl;
-            cout << "[1] Confirm bet" << endl;
-            cout << "[2] Change bet" << endl;
-            cout << "[3] Cancel\n" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "               $" << betAmount << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [1] Change bet amount            |" << endl;
+            cout << "| [2] Finalize bet                 |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [0] Cancel                       |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "Choose your bet: " ;
 
-            cout << "Enter your choice: ";
-
-            if (!(cin >> choice)) {
+            if (!(cin >> choice)){
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Please enter a valid choice from the menu.\n" << endl;
+                cout << "Invalid input. Please enter an integer.\n" << endl;
                 continue;
             }
 
             switch (choice) {
-            case 1:
-                userManager.clear_screen();
-                cout << "Your bet of $" << betAmount << " has been confirmed." << endl;
-                user.subtractBalance(betAmount);
-                userManager.press_return();
-                userManager.clear_screen();
-                return 1;
-            case 2:
-                userManager.clear_screen();
-                return 2;
-            case 3:
-                userManager.clear_screen();
-                colorgame_menu();
-            default:
-                cout << "Please enter a valid choice from the menu.\n" << endl;
-                break;
+                case 0:
+                    userManager.clear_screen();
+                    return 0;
+                case 1:
+                    userManager.clear_screen();
+                    return 1;
+                case 2:
+                    userManager.clear_screen(); 
+                    cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                    cout << "\nPress Enter to continue.";
+                    cin.get();
+                    user.subtractBalance(betAmount);
+                    userManager.clear_screen();
+                    return 2;
+                default:
+                    userManager.clear_screen();
+                    cout << "Invalid input. Please enter an option from the menu.\n" << endl;
+                    break;
             }
         }
     }
@@ -1297,12 +1296,21 @@ public:
                     if (betAmount == 0) {
                         break;
                     }
-				    if (betAmount > 0) {
+				    else{
 					    int betResult = verify_bet(betAmount);
-					    if (betResult == 1) {
-						    play_game(betAmount);
-						    break;
+                        if (betResult == 0){
+                            break;
+                        }
+					    else if (betResult == 1) {
+						    int betAmount = get_bet_amount();
+                            if (betAmount == 0) {
+                                break;
+                            }
 					    }
+                        else if (betResult == 2){
+                            play_game(betAmount);
+						    break;
+                        }
 				    }
 		    	}
 			    break;
@@ -1348,31 +1356,6 @@ public:
 	    userManager.press_return();
     }
 
-    void play_again(int betAmount) {
-    	char choice;
-
-	    cout << "\n----------------------------------------------" << endl;
-    	cout << "Would you like to play another round? (Y/N): ";
-	    cin >> choice;
-	    userManager.clear_screen();
-
-    	if (choice == 'y' || choice == 'Y') {
-	    	userManager.clear_screen();
-		    while (true) {
-			    int betAmount = get_bet_amount();
-    			if (betAmount > 0) {
-	    			int betResult = verify_bet(betAmount);
-		    		if (betResult == 1) {
-			    		play_game(betAmount);
-				    	break;
-    				}
-	    		}
-		    }
-    	}
-	    else {
-		    blackjack_menu();
-    	}
-    }
 
     void play_game(int betAmount) {
         vector<string> playerHand;
@@ -1399,7 +1382,7 @@ public:
 
             if (player_value == -1) {
                 cout << "\nYou drew a 'JOKER'" << endl;
-                play_again(betAmount);
+                userManager.press_return();
                 return;
             }
             else {
@@ -1407,14 +1390,28 @@ public:
             }
 
             cout << "\nDo you want to (1) Hit or (2) Stand?: ";
-            cin >> choice;
+
+            if (!(cin >> choice)){
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                userManager.clear_screen();
+                cout << "Invalid input. Please enter an integer.\n" << endl;
+                continue;
+            }
 
             if (choice == 1) {
                 string additionalCard = draw_card();
                 playerHand.push_back(additionalCard);
             }
-            else {
+            else if(choice == 2){
                 break;
+            }
+            else {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                userManager.clear_screen();
+                cout << "Invalid input. Please enter a valid option.\n" << endl;
+                continue;
             }
 
             userManager.clear_screen();
@@ -1427,7 +1424,7 @@ public:
                 cout << "Dealer drew a 'JOKER'" << endl;
                 cout << "\nYou won $" << betAmount << "!" << endl;
                 user.addBalance(betAmount);
-                play_again(betAmount);
+                userManager.press_return();
                 return;
             }
             if (dealer_value >= 17) {
@@ -1462,10 +1459,11 @@ public:
             user.addBalance(winnings);
         }
 
-        play_again(betAmount);
+        userManager.press_return();
+        return;
     }
 
-    int get_bet_amount() {
+     int get_bet_amount() {
         int betAmount;
 
         while (true) {
@@ -1498,43 +1496,48 @@ public:
         }
     }
 
-    int verify_bet(int betAmount) {
+    int verify_bet(int betAmount){
         int choice;
 
         while (true) {
-            cout << "You have bet $" << betAmount << endl;
-            cout << "-----------------\n" << endl;
-            cout << "[1] Confirm bet" << endl;
-            cout << "[2] Change bet" << endl;
-            cout << "[3] Cancel\n" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "               $" << betAmount << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [1] Change bet amount            |" << endl;
+            cout << "| [2] Finalize bet                 |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [0] Cancel                       |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "Choose your bet: " ;
 
-            cout << "Enter you choice: ";
-            
-            if (!(cin >> choice)) {
+            if (!(cin >> choice)){
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Please enter a valid choice from the menu.\n" << endl;
+                cout << "Invalid input. Please enter an integer.\n" << endl;
                 continue;
             }
 
             switch (choice) {
-            case 1:
-                userManager.clear_screen();
-                cout << "Your bet of $" << betAmount << " has been confirmed." << endl;
-                user.subtractBalance(betAmount);
-                userManager.press_return();
-                userManager.clear_screen();
-                return 1;
-            case 2:
-                userManager.clear_screen();
-                return 2;
-            case 3:
-                userManager.clear_screen();
-                blackjack_menu();
-            default:
-                cout << "Please enter a valid choice from the menu.\n" << endl;
-                break;
+                case 0:
+                    userManager.clear_screen();
+                    return 0;
+                case 1:
+                    userManager.clear_screen();
+                    return 1;
+                case 2:
+                    userManager.clear_screen(); 
+                    cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                    cout << "\nPress Enter to continue.";
+                    cin.get();
+                    user.subtractBalance(betAmount);
+                    userManager.clear_screen();
+                    return 2;
+                default:
+                    userManager.clear_screen();
+                    cout << "Invalid input. Please enter an option from the menu.\n" << endl;
+                    break;
             }
         }
     }
@@ -2697,7 +2700,7 @@ public:
             cout << "|           Logic Games            |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "| Select an option:                |" << endl;
-            cout << "| [1] Sudoku                       |" << endl;
+            cout << "| [1] Soduko                       |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "| [2] Wallet                       |" << endl;
             cout << "+----------------------------------+" << endl;
