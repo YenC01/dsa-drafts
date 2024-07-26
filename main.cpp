@@ -258,6 +258,9 @@ public:
         while (true) {
             cout << "Enter username: ";
             cin >> username;
+		if (username == "x" || username == "X"){
+                return "x";
+            }
             if (username.length() >= 4) break;
             cout << "\nUsername must be at least 4 characters long.\n" << endl;
         }
@@ -2682,6 +2685,10 @@ public:
         string username;
         while (true) {
             username = userManager.get_username_input();
+		if (username == "x"){
+                userManager.clear_screen();
+                return;
+            }
             if (!userManager.username_exists(username)) break;
             cout << "Username already exists. Please choose a different username.\n";
         }
