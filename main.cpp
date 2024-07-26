@@ -2711,6 +2711,10 @@ public:
 
         
         string username = userManager.get_username_input();
+	    if (username == "x"){
+                userManager.clear_screen();
+                return;
+            }
         cout << "Enter password: ";
         string password = userManager.get_password_input();
 
