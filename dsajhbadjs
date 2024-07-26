@@ -2042,7 +2042,7 @@ public:
         cout << "\nPress Enter to return.";
         cin.get();
         userManager.clear_screen();
-        baccarat_menu();
+        return;
     }
 
     vector<int> deal_hand() {
