@@ -25,66 +25,6 @@ using namespace std;
 
 using namespace std;
 
-class CasinoMetrics {
-private:
-    float total_income;
-    float jackpot;
-
-public:
-    CasinoMetrics() : total_income(0.0f), jackpot(100000.0f) {
-        loadMetrics();
-    }
-
-    void addIncome(float amount) {
-        total_income += amount;
-        saveMetrics();
-    }
-
-    float getTotalIncome() const {
-        return total_income;
-    }
-
-    void addJackpot(float amount) {
-        jackpot += amount;
-        saveMetrics();
-    }
-
-    float getJackpot() const {
-        return jackpot;
-    }
-
-    void loadMetrics() {
-        ifstream file("casino_metrics.txt");
-        if (file.is_open()) {
-            file >> total_income >> jackpot;
-            
-            if (file.fail()) {
-                cerr << "Error reading from file. Resetting to default values." << endl;
-                total_income = 0.0f;
-                jackpot = 100000.0f;
-            } else {
-                cout << "Loaded metrics: Total Income: " << total_income << ", Jackpot: " << jackpot << endl;
-            }
-            file.close();
-        } else {
-            cerr << "Metrics file not found. Initializing with default values." << endl;
-            total_income = 0.0f;
-            jackpot = 100000.0f;
-            saveMetrics(); // Save the default values to create the file
-        }
-    }
-
-    void saveMetrics() {
-        ofstream file("casino_metrics.txt");
-        if (file.is_open()) {
-            file << total_income << endl << jackpot;
-            file.close();
-        } else {
-            cerr << "Error saving metrics to file." << endl;
-        }
-    }
-};
-
 class User {
 private:
     struct user {
@@ -95,6 +35,56 @@ private:
         float total_loss;
     };
 
+    void createFilesIfNeeded() {
+        // Check if the user info file exists, if not create it
+        ifstream infile("user_info.txt");
+        if (!infile.good()) {
+            ofstream outfile("user_info.txt");
+            outfile.close();
+        }
+        infile.close();
+
+        // Check if the jackpot file exists, if not create it with an initial value of 100000
+        ifstream jackpotFile("jackpot.txt");
+        if (!jackpotFile.good()) {
+            ofstream jackpotOut("jackpot.txt");
+            jackpotOut << "Jackpot: 100000.0" << endl;
+            jackpotOut.close();
+        }
+        jackpotFile.close();
+    }
+
+    // Read the jackpot value from the file
+    float readJackpot() const {
+        ifstream file("jackpot.txt");
+        if (!file.is_open()) {
+            cerr << "Error: Could not open jackpot file." << endl;
+            return 0.0;
+        }
+
+        string line;
+        getline(file, line);
+        file.close();
+
+        size_t pos = line.find("Jackpot: ");
+        if (pos != string::npos) {
+            return stof(line.substr(pos + 9));
+        }
+        return 0.0;
+    }
+
+    // Write the jackpot value to the file
+    void writeJackpot(float jackpot) {
+        ofstream file("jackpot.txt");
+        if (!file.is_open()) {
+            cerr << "Error: Could not open jackpot file." << endl;
+            return;
+        }
+
+        file << "Jackpot: " << jackpot << endl;
+        file.close();
+    }
+
 public:
     user current_user;
 
@@ -102,6 +92,7 @@ public:
         current_user.balance = initial_balance;
         current_user.total_spent = 0.0f;
         current_user.total_loss = 0.0f;
+        createFilesIfNeeded();
     }
 
     float getBalance() const {
@@ -231,6 +222,18 @@ public:
         }
         return false; // Return false if the current password doesn't match
     }
+
+    // Get the current value of the jackpot
+    float getJackpot() const {
+        return readJackpot();
+    }
+
+    // Add an amount to the jackpot
+    void addToJackpot(float amount) {
+        float current_jackpot = readJackpot();
+        current_jackpot += amount;
+        writeJackpot(current_jackpot);
+    }
 };
 
 class UserManager {
@@ -328,119 +331,6 @@ public:
             }
         }
         file.close();
-        return false;
-    }
-};
-
-class Admin {
-private:
-    UserManager userManager;
-    CasinoMetrics casinoMetrics;
-    vector<User> users; // To hold all users
-
-public:
-    Admin() {
-        casinoMetrics.loadMetrics();
-        loadAllUsers();
-    }
-
-    void admin_menu() {
-        int choice;
-
-        while (true) {
-            cout << "+---------------------------------------+" << endl;
-            cout << "|              Welcome Admin!           |" << endl;
-            cout << "+---------------------------------------+" << endl;
-            cout << endl;
-            cout << "Total Income of the Casino: $" << casinoMetrics.getTotalIncome() << endl;
-            cout << "Current Jackpot for the Lotto: $" << casinoMetrics.getJackpot() << endl;
-            cout << endl;
-            cout << "+---------------------------------------+" << endl;
-            cout << "| [1] View Users                        |" << endl;
-            cout << "| [2] Log-out                           |" << endl;
-            cout << "+---------------------------------------+" << endl;
-            cout << "Enter your choice: ";
-
-            if (!(cin >> choice)) {
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                userManager.clear_screen();
-                cout << "Please enter a valid choice from the menu.\n" << endl;
-                continue;
-            }
-
-            switch (choice) {
-            case 1:
-                userManager.clear_screen();
-                displayAllUsers();
-                break;
-            case 2:
-                userManager.clear_screen();
-                return;
-            default:
-                userManager.clear_screen();
-                cout << "Please enter a valid choice from the menu.\n" << endl;
-            }
-        }
-    }
-
-    void displayAllUsers() const {
-        cout << "+----------------------------------+" << endl;
-        cout << "       All Users Information       " << endl;
-        cout << "+----------------------------------+" << endl;
-        for (const auto& user : users) {
-            cout << "Username: " << user.getUsername() << endl;
-            cout << "Balance: $" << user.getBalance() << endl;
-            cout << "Total Spent: $" << user.getTotalSpent() << endl;
-            cout << "Total Loss: $" << user.getTotalLoss() << endl;
-            cout << "------------------------------" << endl;
-        }
-        cout << "+----------------------------------+" << endl;
-
-        userManager.press_return();
-    }
-
-private:
-    void loadAllUsers() {
-        ifstream file("user_info.txt");
-        if (file.is_open()) {
-            string line;
-            while (getline(file, line)) {
-                User user;
-                if (parseUserFromLine(line, user)) {
-                    users.push_back(user);
-                }
-            }
-            file.close();
-        } else {
-            cerr << "Unable to open user info file." << endl;
-        }
-    }
-
-    bool parseUserFromLine(const string& line, User& user) const {
-        size_t usernamePos = line.find("Username: ");
-        size_t passwordPos = line.find(" Password: ", usernamePos);
-        size_t balancePos = line.find(" Balance: ", passwordPos);
-        size_t totalSpentPos = line.find(" TotalSpent: ", balancePos);
-        size_t totalLossPos = line.find(" TotalLoss: ", totalSpentPos);
-
-        if (usernamePos != string::npos && passwordPos != string::npos && balancePos != string::npos &&
-            totalSpentPos != string::npos && totalLossPos != string::npos) {
-
-            string username = line.substr(usernamePos + 10, passwordPos - (usernamePos + 10));
-            string password = line.substr(passwordPos + 10, balancePos - (passwordPos + 10));
-            float balance = stof(line.substr(balancePos + 9, totalSpentPos - (balancePos + 9)));
-            float totalSpent = stof(line.substr(totalSpentPos + 12, totalLossPos - (totalSpentPos + 12)));
-            float totalLoss = stof(line.substr(totalLossPos + 11));
-
-            user.setUsername(username);
-            user.setPassword(password);
-            user.addBalance(balance);  // Assuming User class has methods to set these
-            user.addTotalSpent(totalSpent);
-            user.addTotalLoss(totalLoss);
-
-            return true;
-        }
         return false;
     }
 };
@@ -784,7 +674,7 @@ public:
                 user.addBalance(100);
         
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "           Press 'enter' to return.";
+                cout << "           Press Enter to return.";
                 cin.get();
                 userManager.clear_screen();
                 return;
@@ -795,7 +685,7 @@ public:
                 user.subtractBalance(15);
             
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "\n           Press 'enter' to return.";
+                cout << "\n           Press Enter to return.";
                 cin.get();
                 userManager.clear_screen();
                 return;
@@ -811,11 +701,10 @@ private:
     User &user;
     UserManager &userManager;
     Wallet &wallet;
-    CasinoMetrics &casinoMetric;
 
 public:
-    Lotto(User &user, UserManager &userManager, Wallet &wallet, CasinoMetrics &casinoMetric)
-        : user(user), userManager(userManager), wallet(wallet), casinoMetric(casinoMetric) {}
+    Lotto(User &user, UserManager &userManager, Wallet &wallet)
+        : user(user), userManager(userManager), wallet(wallet) {}
 
     void instructions(){
         cout << "+----------------------------------------+" << endl;
@@ -923,14 +812,14 @@ public:
 
             bool result = game(max_num);
             if (result) {
-                cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You won $" << casinoMetric.getJackpot() << "!" << endl;
-                user.addBalance(casinoMetric.getJackpot());
+                cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You won $" << user.getJackpot() << "!" << endl;
+                user.addBalance(user.getJackpot());
             } else {
                 cout << "\nYou did not guess all of the winning numbers." << endl;
                 cout << "You lose $" << bet << "." << endl;
                 user.subtractBalance(bet);
                 user.addTotalLoss(bet);
-                casinoMetric.addJackpot(bet);
+                user.addToJackpot(bet);
             }
 
             userManager.press_return();
@@ -1151,7 +1040,7 @@ public:
             cout << "|        Welcome to Lotto!         |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "          !!! Jackpot !!!" << endl;
-            cout << "             $" << int(casinoMetric.getJackpot())<< endl;
+            cout << "             $" << int(user.getJackpot())<< endl;
             cout << "+----------------------------------+" << endl;
             cout << "| Select an option:                |" << endl;
             cout << "| [1] Start the Game               |" << endl;
@@ -1475,13 +1364,16 @@ public:
                     return 0;
                 case 1:
                     userManager.clear_screen();
+                    if (betAmount == 0){
+                        return 0;
+                    }
                     return 1;
                 case 2:
                     userManager.clear_screen(); 
                     cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
                     user.addTotalSpent(betAmount);
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    cout << "\nPress 'enter' to continue.";
+                    cout << "\nPress Enter to continue.";
                     cin.get();
                     user.subtractBalance(betAmount);
                     userManager.clear_screen();
@@ -1691,7 +1583,7 @@ public:
 
             if (player_value == -1) {
                 cout << "\nYou drew a '" << ANSI_COLOR_RED << "JOKER" << ANSI_COLOR_RESET << "'" << endl;
-                cout << "\nPress 'enter' to continue.";
+                cout << "\nPress Enter to continue.";
                 cin.get();
                 userManager.clear_screen();
                 return;
@@ -1842,7 +1734,7 @@ public:
                     cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
                     user.addTotalSpent(betAmount);
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    cout << "\nPress 'enter' to continue.";
+                    cout << "\nPress Enter to continue.";
                     cin.get();
                     user.subtractBalance(betAmount);
                     userManager.clear_screen();
@@ -2089,7 +1981,7 @@ public:
                     cout << "Your bet of $" << bet.amount << " on " << bet.bet << " is confirmed." << endl;
                     user.addTotalSpent(bet.amount);
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    cout << "\nPress 'enter' to continue.";
+                    cout << "\nPress Enter to continue.";
                     cin.get();
                     userManager.clear_screen();
                     game_menu(bet);
@@ -2143,7 +2035,7 @@ public:
             }
         }
 
-        cout << "Press 'enter' to continue.";
+        cout << "Press Enter to continue.";
         cin.get();
         userManager.clear_screen();
         determine_winner(bet, player_value, banker_value);
@@ -2559,7 +2451,7 @@ public:
                         float winnings = bet_multiplier(tries, betAmount);
                         cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You have solved the puzzle." << endl;
                         cout << "You have won $" << winnings << endl;
-                        cout << "\nPress 'enter' to return to the menu.";
+                        cout << "\nPress Enter to return to the menu.";
                         cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         cin.get();
                         userManager.clear_screen();
@@ -2571,7 +2463,7 @@ public:
                             cout << "You have reached the maximum amount of tries. $" << betAmount << " will be deducted from your wallet." << endl;
                             user.addTotalLoss(betAmount);
                             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                            cout << "\nPress 'enter' to return to menu.";
+                            cout << "\nPress Enter to return to menu.";
                             cin.get();
                             userManager.clear_screen();
                             user.subtractBalance(betAmount);
@@ -2583,7 +2475,7 @@ public:
                                 cout << "You only have " << tries << " tries left to solve the puzzle." << endl;
                             }
                             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                            cout << "\nPress 'enter' to continue playing.";
+                            cout << "\nPress Enter to continue playing.";
                             cin.get();
                             userManager.clear_screen();
                         }
@@ -2765,7 +2657,6 @@ private:
     Soduko soduko;
     Slot slot;
     ColorGame colorgame;
-    CasinoMetrics casinoMetrics;
     UserProfile userProfile;
 
 public:
@@ -2773,17 +2664,13 @@ public:
         : user(user), 
         userManager(userManager), 
         wallet(user), 
-        lotto(user, userManager, wallet, casinoMetrics), 
+        lotto(user, userManager, wallet), 
         blackjack(user, userManager, wallet),
         baccarat(user, userManager, wallet), 
         soduko(user, userManager, wallet),
         slot(user, userManager, wallet),
         colorgame(user, userManager, wallet),
-        casinoMetrics(casinoMetrics),
-        userProfile(user, userManager) {
-            casinoMetrics.loadMetrics();
-            loadAllUsers();
-        }
+        userProfile(user, userManager) { }
 
 
     void sign_up() {
@@ -2820,11 +2707,6 @@ public:
         cout << "Enter password: ";
         string password = userManager.get_password_input();
 
-        if (username == "admin" && password == "admin123") { // Admin credentials
-            cout << "Admin login successful." << endl;
-            Admin admin(userManager, casinoMetrics);
-            admin.admin_menu();
-
         if (user.load_user(username, password)) {
             userManager.clear_screen();
             cout << "Login successful! Welcome back " << username << "!" << endl;
@@ -2836,7 +2718,7 @@ public:
             userManager.press_return();
         }
     }
-    }
+    
 
     void main_menu() {
         int choice;
@@ -3010,7 +2892,7 @@ public:
             switch (choice) {
             case 1:
                 userManager.clear_screen();
-                slot.SlotMenu();
+                slot.slotmachine_menu();
                 break;
             case 2:
                 userManager.clear_screen();
