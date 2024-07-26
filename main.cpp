@@ -19,29 +19,92 @@
 
 using namespace std;
 
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+using namespace std;
+
 class User {
 private:
     struct user {
         string username;
         string password;
         float balance;
-        float jackpot;
+        float total_spent;
+        float total_loss;
     };
-   
+
+    void createFilesIfNeeded() {
+        // Check if the user info file exists, if not create it
+        ifstream infile("user_info.txt");
+        if (!infile.good()) {
+            ofstream outfile("user_info.txt");
+            outfile.close();
+        }
+        infile.close();
+
+        // Check if the jackpot file exists, if not create it with an initial value of 100000
+        ifstream jackpotFile("jackpot.txt");
+        if (!jackpotFile.good()) {
+            ofstream jackpotOut("jackpot.txt");
+            jackpotOut << "Jackpot: 100000.0" << endl;
+            jackpotOut.close();
+        }
+        jackpotFile.close();
+    }
+
+    // Read the jackpot value from the file
+    float readJackpot() const {
+        ifstream file("jackpot.txt");
+        if (!file.is_open()) {
+            cerr << "Error: Could not open jackpot file." << endl;
+            return 0.0;
+        }
+
+        string line;
+        getline(file, line);
+        file.close();
+
+        size_t pos = line.find("Jackpot: ");
+        if (pos != string::npos) {
+            return stof(line.substr(pos + 9));
+        }
+        return 0.0;
+    }
+
+    // Write the jackpot value to the file
+    void writeJackpot(float jackpot) {
+        ofstream file("jackpot.txt");
+        if (!file.is_open()) {
+            cerr << "Error: Could not open jackpot file." << endl;
+            return;
+        }
+
+        file << "Jackpot: " << jackpot << endl;
+        file.close();
+    }
+
 public:
     user current_user;
 
     User(float initial_balance = 0.0f) {
         current_user.balance = initial_balance;
-        current_user.jackpot = 1392742.0f;
+        current_user.total_spent = 0.0f;
+        current_user.total_loss = 0.0f;
+        createFilesIfNeeded();
     }
 
     float getBalance() const {
         return current_user.balance;
     }
 
-    float getJackpot() const {
-        return current_user.jackpot;
+    float getTotalSpent() const {
+        return current_user.total_spent;
+    }
+
+    float getTotalLoss() const {
+        return current_user.total_loss;
     }
 
     void addBalance(float amount) {
@@ -54,20 +117,18 @@ public:
         save_user();
     }
 
-    void addToJackpot(float amount) {
-        current_user.jackpot += amount;
+    void addTotalSpent(float amount) {
+        current_user.total_spent += amount;
+        save_user();
+    }
+
+    void addTotalLoss(float amount) {
+        current_user.total_loss += amount;
+        save_user();
     }
 
     void setUsername(const string& username) {
         current_user.username = username;
-    }
-
-    void setPassword(const string& password) {
-        current_user.password = password;
-    }
-
-    void setBalance(float balance) {
-        current_user.balance = balance;
     }
 
     string getUsername() const {
@@ -78,35 +139,44 @@ public:
         return current_user.password;
     }
 
+    void setPassword(const string& password) {
+        current_user.password = password;
+        save_user();
+    }
+
     void save_user() {
-    ifstream infile("user_info.txt");
-    stringstream buffer;
-    buffer << infile.rdbuf();
-    infile.close();
+        ifstream infile("user_info.txt");
+        stringstream buffer;
+        buffer << infile.rdbuf();
+        infile.close();
 
-    string content = buffer.str();
-    stringstream new_content;
-    bool user_found = false;
-    size_t pos = 0;
+        string content = buffer.str();
+        stringstream new_content;
+        bool user_found = false;
 
-    string line;
-    while (getline(buffer, line)) {
-        if (line.find("Username: " + getUsername()) != string::npos) {
-            line = "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot());
-            user_found = true;
+        string line;
+        while (getline(buffer, line)) {
+            if (line.find("Username: " + getUsername()) != string::npos) {
+                line = "Username: " + getUsername() + " Password: " + getPassword() +
+                       " Balance: " + to_string(getBalance()) +
+                       " TotalSpent: " + to_string(getTotalSpent()) +
+                       " TotalLoss: " + to_string(getTotalLoss());
+                user_found = true;
+            }
+            new_content << line << "\n";
         }
-        new_content << line << "\n";
+
+        if (!user_found) {
+            new_content << "Username: " + getUsername() + " Password: " + getPassword() +
+                           " Balance: " + to_string(getBalance()) +
+                           " TotalSpent: " + to_string(getTotalSpent()) +
+                           " TotalLoss: " + to_string(getTotalLoss()) + "\n";
+        }
+
+        ofstream outfile("user_info.txt");
+        outfile << new_content.str();
+        outfile.close();
     }
-
-    if (!user_found) {
-        new_content << "Username: " + getUsername() + " Password: " + getPassword() + " Balance: " + to_string(getBalance()) + " Jackpot: " + to_string(getJackpot()) + "\n";
-    }
-
-    ofstream outfile("user_info.txt");
-    outfile << new_content.str();
-    outfile.close();
-}
-
 
     bool load_user(const string& username, const string& password) {
         ifstream file("user_info.txt");
@@ -121,14 +191,17 @@ public:
                     string stored_password = line.substr(pos + 10, password_end - (pos + 10));
                     if (stored_password == password) {
                         size_t balance_pos = line.find("Balance: ");
-                        size_t jackpot_pos = line.find("Jackpot: ");
-                        if (balance_pos != string::npos && jackpot_pos != string::npos) {
-                            float balance = stof(line.substr(balance_pos + 9, jackpot_pos - balance_pos - 9));
-                            float jackpot = stof(line.substr(jackpot_pos + 9));
+                        size_t total_spent_pos = line.find(" TotalSpent: ");
+                        size_t total_loss_pos = line.find(" TotalLoss: ");
+                        if (balance_pos != string::npos && total_spent_pos != string::npos && total_loss_pos != string::npos) {
+                            float balance = stof(line.substr(balance_pos + 9, total_spent_pos - balance_pos - 9));
+                            float total_spent = stof(line.substr(total_spent_pos + 12, total_loss_pos - total_spent_pos - 12));
+                            float total_loss = stof(line.substr(total_loss_pos + 11));
                             setUsername(username);
-                            setPassword(password);
-                            setBalance(balance);
-                            current_user.jackpot = jackpot;
+                            current_user.password = stored_password;  // Set password directly to avoid unnecessary saving
+                            current_user.balance = balance;
+                            current_user.total_spent = total_spent;
+                            current_user.total_loss = total_loss;
                             file.close();
                             return true;
                         }
@@ -138,6 +211,28 @@ public:
         }
         file.close();
         return false;
+    }
+
+    // Function to change the user's password
+    bool changePassword(const string& currentPassword, const string& newPassword) {
+        if (current_user.password == currentPassword) {
+            current_user.password = newPassword;
+            save_user();
+            return true;
+        }
+        return false; // Return false if the current password doesn't match
+    }
+
+    // Get the current value of the jackpot
+    float getJackpot() const {
+        return readJackpot();
+    }
+
+    // Add an amount to the jackpot
+    void addToJackpot(float amount) {
+        float current_jackpot = readJackpot();
+        current_jackpot += amount;
+        writeJackpot(current_jackpot);
     }
 };
 
@@ -153,7 +248,7 @@ public:
 
     void press_return() const {
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "\nPress 'enter' to return.";
+        cout << "\nPress Enter to return.";
         cin.get();
         clear_screen();
     }
@@ -237,6 +332,83 @@ public:
         }
         file.close();
         return false;
+    }
+};
+
+
+class UserProfile {
+private:
+    User& user; 
+    UserManager& userManager; 
+public:
+    UserProfile(User& user, UserManager& userManager)
+        : user(user), 
+        userManager(userManager) {}
+
+    void user_profile() {
+        int choice;
+        while (true) {
+            cout << "+---------------------------------------+" << endl;
+            cout << "|             User Profile              |" << endl;
+            cout << "+---------------------------------------+" << endl;
+            cout << endl;
+            cout << " Username:                 " << user.getUsername() << endl;
+            cout << " Total amount spent:       $" << user.getTotalSpent() << endl;
+            cout << " Total amount loss:        $" << user.getTotalLoss() << endl; 
+            cout << " Current Balance:          $" << user.getBalance() << endl; 
+            cout << endl;
+            cout << "+---------------------------------------+" << endl;
+            cout << "| [1] Change password                   |" << endl;
+            cout << "| [2] Return to main menu               |" << endl;
+            cout << "+---------------------------------------+" << endl;
+            cout << "Enter your choice: ";
+
+            if (!(cin >> choice)) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                userManager.clear_screen();
+                cout << "Please enter a valid choice from the menu.\n" << endl;
+                continue;
+            }
+
+            switch (choice) {
+            case 1:
+                userManager.clear_screen();
+                change_password();
+                break;
+            case 2:
+                userManager.clear_screen();
+                return;
+            default:
+                userManager.clear_screen();
+                cout << "Please enter a valid choice from the menu.\n" << endl;
+            }   
+        }
+    }
+
+    void change_password() {
+        cout << "Enter current password for verification: ";
+        string old_password = userManager.get_password_input();
+
+        if (user.load_user(user.getUsername(), old_password)) {
+            userManager.clear_screen();
+            cout << "+----------------------------------+" << endl;
+            cout << "|         Change Password          |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "\nCurrent Password: " << user.getPassword() << endl;
+            cout << endl;
+            string password = userManager.get_confirmed_password();
+            user.changePassword(old_password, password);
+
+            cout << "\nPassword successfully updated!" << endl;
+            userManager.press_return();
+            return;
+
+        } else {
+            userManager.clear_screen();
+            cout << "Invalid username or password. Please try again." << endl;
+            userManager.press_return();
+        }
     }
 };
 
@@ -372,10 +544,10 @@ public:
         
     string slotArray[6] = {"7", "Orange", "Cherry", "Blueberry", "Watermelon", "Pear"};
     string colors[6] = {"\033[0;36m", "\e[0;33m", "\033[0;31m", "\033[0;34m", "\033[0;35m", "\033[0;32m"};
-    const string RESET = "\033[0m";    
+    const string RESET = "\033[0m";
 
     void slotmachine_menu() {
-        int choice;
+    int choice;    
 
         while (true) {
             cout << "+----------------------------------+" << endl;
@@ -444,6 +616,7 @@ public:
 
             if (choice == 1){
                 userManager.clear_screen();
+                user.addTotalSpent(15);
                 slot();
                 break;
             } else if (choice == 2){
@@ -501,17 +674,18 @@ public:
                 user.addBalance(100);
         
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "           Press 'enter' to return.";
+                cout << "           Press Enter to return.";
                 cin.get();
                 userManager.clear_screen();
                 return;
             }
             else {
                 cout << "\n        You" << ANSI_COLOR_RED " LOSE" << ANSI_COLOR_RESET << "! Better luck next time!" << endl;
+                user.addTotalLoss(15);
                 user.subtractBalance(15);
             
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "\n           Press 'enter' to return.";
+                cout << "\n           Press Enter to return.";
                 cin.get();
                 userManager.clear_screen();
                 return;
@@ -593,6 +767,7 @@ public:
                         cout << "|        EASY LEVEL: 1 - 19        |" << endl;
                         cout << "+----------------------------------+" << endl;
                         game_menu(19, 300);
+                        user.addTotalSpent(300);
                     }
                     break;
                 case 2:
@@ -602,6 +777,7 @@ public:
                         cout << "|     INTERMEDIATE LEVEL: 1 - 39   |" << endl;
                         cout << "+----------------------------------+" << endl;
                         game_menu(39, 200);
+                        user.addTotalSpent(200);
                     }
                     break;
                 case 3:
@@ -611,6 +787,7 @@ public:
                         cout << "|       DIFFICULT LEVEL: 1 - 59    |" << endl;
                         cout << "+----------------------------------+" << endl;
                         game_menu(59, 100);
+                        user.addTotalSpent(100);
                     }
                     break;
                 default:
@@ -641,6 +818,7 @@ public:
                 cout << "\nYou did not guess all of the winning numbers." << endl;
                 cout << "You lose $" << bet << "." << endl;
                 user.subtractBalance(bet);
+                user.addTotalLoss(bet);
                 user.addToJackpot(bet);
             }
 
@@ -862,7 +1040,7 @@ public:
             cout << "|        Welcome to Lotto!         |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "          !!! Jackpot !!!" << endl;
-            cout << "             $" << int(user.getJackpot()) << endl;
+            cout << "             $" << int(user.getJackpot())<< endl;
             cout << "+----------------------------------+" << endl;
             cout << "| Select an option:                |" << endl;
             cout << "| [1] Start the Game               |" << endl;
@@ -1087,6 +1265,7 @@ public:
         int winnings = 0;
         if (count == 0 || count == 1) {
             cout << "Better luck next time!" << endl;
+            user.addTotalLoss(betAmount);
         }
         if (count == 2) {
             winnings = betAmount * 2;
@@ -1175,7 +1354,7 @@ public:
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
 
@@ -1185,12 +1364,16 @@ public:
                     return 0;
                 case 1:
                     userManager.clear_screen();
+                    if (betAmount == 0){
+                        return 0;
+                    }
                     return 1;
                 case 2:
                     userManager.clear_screen(); 
                     cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
+                    user.addTotalSpent(betAmount);
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    cout << "\nPress 'enter' to continue.";
+                    cout << "\nPress Enter to continue.";
                     cin.get();
                     user.subtractBalance(betAmount);
                     userManager.clear_screen();
@@ -1400,7 +1583,7 @@ public:
 
             if (player_value == -1) {
                 cout << "\nYou drew a '" << ANSI_COLOR_RED << "JOKER" << ANSI_COLOR_RESET << "'" << endl;
-                cout << "\nPress 'enter' to continue.";
+                cout << "\nPress Enter to continue.";
                 cin.get();
                 userManager.clear_screen();
                 return;
@@ -1471,6 +1654,7 @@ public:
         }
         else {
             cout << "The dealer" << ANSI_COLOR_RED << " WINS!" << ANSI_COLOR_RESET << endl;
+            user.addTotalLoss(betAmount);
         }
 
         if (win == 1) {
@@ -1534,7 +1718,7 @@ public:
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 userManager.clear_screen();
-                cout << "Invalid input. Please enter an integer.\n" << endl;
+                cout << "Please enter a valid choice from the menu.\n" << endl;
                 continue;
             }
 
@@ -1548,8 +1732,9 @@ public:
                 case 2:
                     userManager.clear_screen(); 
                     cout << "Your bet of $" << betAmount <<" is confirmed." << endl;
+                    user.addTotalSpent(betAmount);
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    cout << "\nPress 'enter' to continue.";
+                    cout << "\nPress Enter to continue.";
                     cin.get();
                     user.subtractBalance(betAmount);
                     userManager.clear_screen();
@@ -1625,7 +1810,7 @@ public:
                     break;
             }
         }
-        }
+    }
 
     void instructions(){
         cout << "+----------------------------------------+" << endl;
@@ -1794,8 +1979,9 @@ public:
                 case 3:
                     userManager.clear_screen(); 
                     cout << "Your bet of $" << bet.amount << " on " << bet.bet << " is confirmed." << endl;
+                    user.addTotalSpent(bet.amount);
                     cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
-                    cout << "\nPress 'enter' to continue.";
+                    cout << "\nPress Enter to continue.";
                     cin.get();
                     userManager.clear_screen();
                     game_menu(bet);
@@ -1849,14 +2035,14 @@ public:
             }
         }
 
-        cout << "Press 'enter' to continue.";
+        cout << "Press Enter to continue.";
         cin.get();
         userManager.clear_screen();
         determine_winner(bet, player_value, banker_value);
-        cout << "\nPress 'enter' to return.";
+        cout << "\nPress Enter to return.";
         cin.get();
         userManager.clear_screen();
-        baccarat_menu();
+        return;
     }
 
     vector<int> deal_hand() {
@@ -1917,6 +2103,7 @@ public:
             } else {
                 user.subtractBalance(bet.amount);
                 cout << "\nYou lose $" << bet.amount << ". Better luck next time!\n";
+                user.addTotalLoss(bet.amount);
             }
         } else if (banker_value > player_value) {
             cout << "Winner: Banker" << endl;
@@ -1926,6 +2113,7 @@ public:
             } else {
                 user.subtractBalance(bet.amount);
                 cout << "\nYou lose $" << bet.amount << ". Better luck next time!\n";
+                user.addTotalLoss(bet.amount);
             }
         } else {
             cout << "It's a tie " << endl;;
@@ -1935,6 +2123,7 @@ public:
             } else {
                 user.subtractBalance(bet.amount);
                 cout << "\nYou lose $" << bet.amount << ". Better luck next time!\n";
+                user.addTotalLoss(bet.amount);
             }
         }
     }
@@ -2129,6 +2318,7 @@ public:
                 userManager.clear_screen();
                 cout << "Your bet of $" << bet_amount << " has been confirmed." << endl;
                 user.subtractBalance(bet_amount);
+                user.addTotalSpent(bet_amount);
                 userManager.press_return();
                 userManager.clear_screen();
                 return 2;
@@ -2223,7 +2413,8 @@ public:
 
             if (row == -1 || col == -1 || num == -1) {
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                cout << "\nYou just forfeited $" << betAmount << ". Press 'enter' to return.";
+                cout << "\nYou just forfeited $" << betAmount << ". Press Enter to return.";
+                user.addTotalLoss(betAmount);
                 cin.get();
                 userManager.clear_screen();
                 break;
@@ -2260,7 +2451,7 @@ public:
                         float winnings = bet_multiplier(tries, betAmount);
                         cout << ANSI_COLOR_RED << "\nCONGRATULATIONS!" << ANSI_COLOR_RESET << " You have solved the puzzle." << endl;
                         cout << "You have won $" << winnings << endl;
-                        cout << "\nPress 'enter' to return to the menu.";
+                        cout << "\nPress Enter to return to the menu.";
                         cin.ignore(numeric_limits<streamsize>::max(), '\n');
                         cin.get();
                         userManager.clear_screen();
@@ -2270,8 +2461,9 @@ public:
                         tries--;
                         if (tries <= 0) {
                             cout << "You have reached the maximum amount of tries. $" << betAmount << " will be deducted from your wallet." << endl;
+                            user.addTotalLoss(betAmount);
                             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                            cout << "\nPress 'enter' to return to menu.";
+                            cout << "\nPress Enter to return to menu.";
                             cin.get();
                             userManager.clear_screen();
                             user.subtractBalance(betAmount);
@@ -2283,7 +2475,7 @@ public:
                                 cout << "You only have " << tries << " tries left to solve the puzzle." << endl;
                             }
                             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-                            cout << "\nPress 'enter' to continue playing.";
+                            cout << "\nPress Enter to continue playing.";
                             cin.get();
                             userManager.clear_screen();
                         }
@@ -2465,6 +2657,7 @@ private:
     Soduko soduko;
     Slot slot;
     ColorGame colorgame;
+    UserProfile userProfile;
 
 public:
     Casino(User& user, UserManager& userManager)
@@ -2476,12 +2669,15 @@ public:
         baccarat(user, userManager, wallet), 
         soduko(user, userManager, wallet),
         slot(user, userManager, wallet),
-        colorgame(user, userManager, wallet) {}
+        colorgame(user, userManager, wallet),
+        userProfile(user, userManager) { }
+
 
     void sign_up() {
         cout << "+----------------------------------+" << endl;
         cout << "|              Sign-Up             |" << endl;
         cout << "+----------------------------------+" << endl;
+
 
         string username;
         while (true) {
@@ -2506,6 +2702,7 @@ public:
         cout << "|              Log-In              |" << endl;
         cout << "+----------------------------------+" << endl;
 
+        
         string username = userManager.get_username_input();
         cout << "Enter password: ";
         string password = userManager.get_password_input();
@@ -2514,13 +2711,14 @@ public:
             userManager.clear_screen();
             cout << "Login successful! Welcome back " << username << "!" << endl;
             userManager.press_return();
-            game_menu();
+            user_menu();
         } else {
             userManager.clear_screen();
             cout << "Invalid username or password. Please try again." << endl;
             userManager.press_return();
         }
     }
+    
 
     void main_menu() {
         int choice;
@@ -2563,6 +2761,55 @@ public:
         }
     }
 
+    void user_menu(){
+        int choice;
+
+        while (true)
+        {
+            cout << "+----------------------------------+" << endl;
+            cout << "           Welcome " << user.getUsername() << "!"<<  endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| Select an option:                |" << endl;
+            cout << "| [1] View Account Profile         |" << endl;
+            cout << "| [2] View Games                   |" << endl;
+            cout << "| [3] View Wallet                  |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << "| [4] Log-Out                      |" << endl;
+            cout << "+----------------------------------+" << endl;
+            cout << " Enter your choice: ";
+
+            if (!(cin >> choice)) {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                userManager.clear_screen();
+                cout << "Please enter a valid choice from the menu.\n" << endl;
+                continue;
+            }
+
+            switch (choice) {
+            case 1:
+                userManager.clear_screen();
+                userProfile.user_profile();
+                break;
+            case 2:
+                userManager.clear_screen();
+                game_menu();
+                break;
+            case 3:
+                userManager.clear_screen();
+                wallet.view_wallet();
+                break;
+            case 4:
+                userManager.clear_screen();
+                return;
+            default:
+                userManager.clear_screen();
+                cout << "Please enter a valid choice from the menu.\n" << endl;
+            }
+        }
+        
+    }
+
     void game_menu(){
         int choice;
 
@@ -2577,7 +2824,7 @@ public:
             cout << "+----------------------------------+" << endl;
             cout << "| [4] Wallet                       |" << endl;
             cout << "+----------------------------------+" << endl;
-            cout << "| [5] Log-Out                      |" << endl;
+            cout << "| [5] Return to main menu          |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << " Enter your choice: ";
 
@@ -2608,8 +2855,7 @@ public:
                 break;
             case 5:
                 userManager.clear_screen();
-                main_menu();
-                break;
+                return;
             default:
                 userManager.clear_screen();
                 cout << "Please enter a valid choice from the menu.\n" << endl;
@@ -2662,7 +2908,7 @@ public:
                 break;
             case 5:
                 userManager.clear_screen();
-                game_menu();
+                return;
                 break;
             default:
                 userManager.clear_screen();
@@ -2711,7 +2957,7 @@ public:
                 break;
             case 4:
                 userManager.clear_screen();
-                game_menu();
+                return;
                 break;
             default:
                 userManager.clear_screen();
@@ -2728,7 +2974,7 @@ public:
             cout << "|           Logic Games            |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "| Select an option:                |" << endl;
-            cout << "| [1] Soduko                       |" << endl;
+            cout << "| [1] Sudoku                       |" << endl;
             cout << "+----------------------------------+" << endl;
             cout << "| [2] Wallet                       |" << endl;
             cout << "+----------------------------------+" << endl;
@@ -2755,7 +3001,7 @@ public:
                 break;
             case 3:
                 userManager.clear_screen();
-                game_menu();
+                return;
                 break;
             default:
                 userManager.clear_screen();
@@ -2763,6 +3009,8 @@ public:
             }
         }
     }
+
+    
 };
 
 int main() {
